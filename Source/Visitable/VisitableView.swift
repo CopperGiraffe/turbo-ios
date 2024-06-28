@@ -24,7 +24,7 @@ open class VisitableView: UIView {
     open func activateWebView(_ webView: WKWebView, forVisitable visitable: Visitable) {
         self.webView = webView
         self.visitable = visitable
-        addSubview(webView)
+        insertSubview(webView, belowSubview: activityIndicatorView)
         addFillConstraints(for: webView)
         installRefreshControl()
         showOrHideWebView()
@@ -68,17 +68,8 @@ open class VisitableView: UIView {
         guard let scrollView = webView?.scrollView, allowsPullToRefresh else { return }
         
         #if !targetEnvironment(macCatalyst)
-        scrollView.addSubview(refreshControl)
-
-        /// Infer refresh control's default height from its frame, if given.
-        /// Otherwise fallback to 60 (the default height).
-        let refreshControlHeight = refreshControl.frame.height > 0 ? refreshControl.frame.height : 60
-        
-        NSLayoutConstraint.activate([
-            refreshControl.centerXAnchor.constraint(equalTo: centerXAnchor),
-            refreshControl.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
-            refreshControl.heightAnchor.constraint(equalToConstant: refreshControlHeight)
-        ])
+        scrollView.insertSubview(refreshControl, belowSubview: webView!)
+        scrollView.showsVerticalScrollIndicator = false
         #endif
     }
 
@@ -113,7 +104,6 @@ open class VisitableView: UIView {
         guard !isRefreshing else { return }
 
         activityIndicatorView.startAnimating()
-        bringSubviewToFront(activityIndicatorView)
     }
 
     open func hideActivityIndicator() {
@@ -149,13 +139,18 @@ open class VisitableView: UIView {
             screenshot.heightAnchor.constraint(equalToConstant: screenshot.bounds.size.height)
         ])
 
-        screenshotView = screenshot        
+        screenshotView = screenshot
     }
 
     open func showScreenshot() {
         guard !isShowingScreenshot, !isRefreshing else { return }
 
-        addSubview(screenshotContainerView)
+        if let webView = webView {
+            insertSubview(screenshotContainerView, aboveSubview: webView)
+        } else {
+            addSubview(screenshotContainerView)
+        }
+
         addFillConstraints(for: screenshotContainerView)
         showOrHideWebView()
     }
